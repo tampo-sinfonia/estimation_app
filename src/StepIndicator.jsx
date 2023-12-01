@@ -39,11 +39,12 @@ function StepIndicator({ steps, setStep, stepData }) {
         <StepContainer>
             {steps.map((step, i) => {
             const isCompleted = stepData[`step${i+1}`].isCompleted;
+            const isRequired = stepData[`step${i+1}`].isRequired;
             return (
                 <React.Fragment key={i}>
                     <Step 
                         isCurrent={step.isCurrent}
-                        isRequired={step.isRequired}
+                        isRequired={isRequired}
                         isCompleted={isCompleted}
                         onClick={() => setStep(i + 1)}
                     >
