@@ -3,25 +3,28 @@ import styled from 'styled-components'
 import Header from './Header.jsx'
 import Footer from './Footer.jsx'
 import Form from './Form.jsx'
+import Box from './Box.jsx'
 
 const AppContainer = styled.div`
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
 `;
 
 function App() {
   return (
-    <AppContainer>
-      <Header />
-      <Router>
-        <Routes>
-          <Route path="/estimation" element={<Form />} />
-          <Route path="/estimation/complete" element={<EstimationComplete />} />
-        </Routes>
-      </Router>
-      <Footer />
-    </AppContainer>
+      <Box backgroundColor="背景色1">
+        <AppContainer>
+            <Header />
+            <Router>
+              <Routes>
+                <Route path="/estimation" element={<Form />} />
+                <Route path="/estimation/complete" element={<EstimationComplete />} />
+              </Routes>
+            </Router>
+            <Footer />
+        </AppContainer>
+      </Box>
   )
 }
 
@@ -45,25 +48,26 @@ const EstimationCompleteText = styled.p`
   margin-bottom: 20px;
 `;
 
-const EstimationCompleteButton = styled.button`
+const EstimationCompleteButton = styled.a`
   width: 300px;
   height: 40px;
   border-radius: 4px;
   border: none;
-  background-color: #1e90ff;
+  background-color: #51C707;
   color: white;
   font-size: 16px;
   font-weight: bold;
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+  line-height: 40px;
 `;
 
-import { useNavigate } from 'react-router-dom';
-
 function EstimationComplete() {
-  const navigate = useNavigate();
   return (
     <EstimationCompleteContainer>
       <EstimationCompleteTitle>見積もり依頼を受け付けました</EstimationCompleteTitle>
-      <EstimationCompleteButton onClick={() => navigate('/')}>トップに戻る</EstimationCompleteButton>
+      <EstimationCompleteButton href="https://sinfonia.biz/">トップに戻る</EstimationCompleteButton>
     </EstimationCompleteContainer>
   );
 }

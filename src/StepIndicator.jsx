@@ -15,11 +15,11 @@ const Step = styled.div`
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    color: ${props => props.isCurrent ? 'white' : props.isCompleted ? '#adb5bd' : '#000'};
+    color: ${props => props.isCurrent ? 'white' : props.isCompleted ? '#808080' : '#000'};
     font-size: 12px;
     font-weight: bold;
     border: ${props => props.isRequired ? '1px solid red' : '1px solid blue'};
-    background-color: ${props => props.isCurrent ? 'blue' : props.isCompleted ? '#adb5bd' : '#fff'};
+    background-color: ${props => props.isCurrent ? '#51c707' : props.isCompleted ? '#adb5bd' : '#fff'};
     `;
 
 const StepLine = styled.div`

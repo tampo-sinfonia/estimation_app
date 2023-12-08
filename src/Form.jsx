@@ -20,6 +20,8 @@ function getJapaneseValue(name) {
             return "テスト";
         case "maintenance":
             return "保守/運用";
+        case "otherRequirement":
+            return "その他";
         case "proposal":
             return "企画書";
         case "uiDesign":
@@ -55,53 +57,83 @@ function getJapaneseValue(name) {
     }
 }
 
+const formatEmailText = (stepData) => {
+    const selectedOptionsStep3 = Object.entries(stepData.step3.selectedOptions)
+        .filter(([key, value]) => value)
+        .map(([key]) => getJapaneseValue(key))
+        .join(', ');
+
+    const selectedOptionsStep4 = Object.entries(stepData.step4.selectedOptions)
+        .filter(([key, value]) => value)
+        .map(([key]) => getJapaneseValue(key))
+        .join(', ');
+
+    const surveyStep11 = Object.entries(stepData.step11.survey)
+        .filter(([key, value]) => value)
+        .map(([key]) => getJapaneseValue(key))
+        .join(', ');
+
+    let emailText = '';
+
+    if (stepData.step1.selectedOption) emailText += `どのようなお仕事ですか？\n選択オプション: ${stepData.step1.selectedOption}\n${stepData.step1.otherDetail ? `詳細: ${stepData.step1.otherDetail}\n\n` : ''}`;
+    if (stepData.step2.detail) emailText += `公開プラットフォーム（端末・OS）は何ですか？\n詳細: ${stepData.step2.detail}\n\n`;
+    if (selectedOptionsStep3) emailText += `依頼したい内容を教えてください\n選択オプション: ${selectedOptionsStep3}\n${stepData.step3.otherRequirementDetail ? `詳細: ${stepData.step3.otherRequirementDetail}\n\n` : ''}`;
+    if (selectedOptionsStep4) emailText += `ご用意されているものはありますか？\n選択オプション: ${selectedOptionsStep4}\n${stepData.step4.otherRequirementDetail ? `詳細: ${stepData.step4.otherRequirementDetail}\n\n` : ''}`;
+    if (stepData.step5.hasPreference) emailText += `開発環境・言語にご希望はありますか？\n選好: ${stepData.step5.hasPreference}\n${stepData.step5.preferenceDetail ? `詳細: ${stepData.step5.preferenceDetail}\n\n` : ''}`;
+    if (stepData.step6.exampleUrl) emailText += `ご参考になるサイトはありますか？\n例のURL: ${stepData.step6.exampleUrl}\n\n`;
+    if (stepData.step7.budget) emailText += `ご予算はいくらぐらいでしょうか？\n予算: ${stepData.step7.budget}\n\n`;
+    if (stepData.step8.deadline) emailText += `お見積りご希望期限を選択してください\n期限: ${stepData.step8.deadline}\n${stepData.step8.otherDeadline ? `詳細: ${stepData.step8.otherDeadline}\n\n` : ''}`;
+    if (stepData.step9.deliveryTime) emailText += `納期はいつが良いですか？\n納期: ${stepData.step9.deliveryTime}\n${stepData.step9.otherDeliveryTime ? `詳細: ${stepData.step9.otherDeliveryTime}\n\n` : ''}`;
+    if (stepData.step10.detail) emailText += `ご要望・ご質問などがあればご記入ください\n詳細: ${stepData.step10.detail}\n\n`;
+    if (stepData.step11.name) {
+        emailText += `お客様情報\n名前: ${stepData.step11.name}\n会社名: ${stepData.step11.companyName}\nメール: ${stepData.step11.email}\nメッセージ: ${stepData.step11.message}\nアンケート: ${surveyStep11}\n`;
+        if (stepData.step11.websiteName) emailText += `ウェブサイト名: ${stepData.step11.websiteName}\n`;
+        if (stepData.step11.exhibitionName) emailText += `展示会名: ${stepData.step11.exhibitionName}\n`;
+        if (stepData.step11.otherSurvey) emailText += `その他: ${stepData.step11.otherSurvey}\n\n`;
+    }
+
+    return emailText;
+};
+
 function Form() {
     const navigate = useNavigate();
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [formState, setFormState] = useState({ 
         totalSteps: 12, 
         currentStep: 1,
         steps: Array(11).fill().map((_, i) => ({ 
             isCurrent: i === 0, 
         })),
-        // stepData: {
-        //     step1: { isCompleted: false, selectedOption: "", otherDetail: "", isRequired: true, error: "" },
-        //     step2: { isCompleted: false, detail: "", isRequired: true, error: "" },
-        //     step3: { isCompleted: false, selectedOptions: { requirementsDefinition: false, design: false, development: false, testing: false, maintenance: false, otherRequirement: false }, otherRequirementDetail: "", isRequired: true, error: "" },
-        //     step4: { isCompleted: false, selectedOptions: { proposal: false, uiDesign: false, specification: false, server: false, domain: false, none: false, otherRequirement: false }, otherRequirementDetail: "", isRequired: true, error: "" },
-        //     step5: { isCompleted: false, hasPreference: "", preferenceDetail: "", isRequired: true, error: "" },
-        //     step6: { isCompleted: false, exampleUrl: "", isRequired: false, error: "" },
-        //     step7: { isCompleted: false, budget: "", isRequired: true, error: "" },
-        //     step8: { isCompleted: false, deadline: "", otherDeadline: "", isRequired: true, error: "" },
-        //     step9: { isCompleted: false, deliveryTime: "", otherDeliveryTime: "", isRequired: true, error: "" },
-        //     step10: { isCompleted: false, detail: "", isRequired: true, error: "" },
-        //     step11: { isCompleted: false, name: "", companyName: "", email: "", message: "", survey: { internetSearch: false, employee: false, onlineNews: false, dm: false, website: false, media: false, acquaintance: false, exhibition: false, others: false }, websiteName: "", exhibitionName: "", otherSurvey: "", isRequired: true, error: "" },
-        //     step12: { isCompleted: true, isRequired: false, error: "" },
-        // },
-        stepData : {
-            step1: { isCompleted: true, selectedOption: "VR", otherDetail: "詳細1", isRequired: true, error: "" },
-            step2: { isCompleted: true, detail: "詳細2", isRequired: true, error: "" },
-            step3: { isCompleted: true, selectedOptions: { requirementsDefinition: true, design: true, development: true, testing: true, maintenance: true, otherRequirement: true }, otherRequirementDetail: "詳細3", isRequired: true, error: "" },
-            step4: { isCompleted: true, selectedOptions: { proposal: true, uiDesign: true, specification: true, server: true, domain: true, none: true, otherRequirement: true }, otherRequirementDetail: "詳細4", isRequired: true, error: "" },
-            step5: { isCompleted: true, hasPreference: "ある", preferenceDetail: "詳細5", isRequired: true, error: "" },
-            step6: { isCompleted: true, exampleUrl: "http://example.com", isRequired: false, error: "" },
-            step7: { isCompleted: true, budget: "50万円未満", isRequired: true, error: "" },
-            step8: { isCompleted: true, deadline: "3営業日以内", otherDeadline: "詳細8", isRequired: true, error: "" },
-            step9: { isCompleted: true, deliveryTime: "１か月以内", otherDeliveryTime: "詳細9", isRequired: true, error: "" },
-            step10: { isCompleted: true, detail: "詳細10", isRequired: true, error: "" },
-            step11: { isCompleted: true, name: "山田太郎", companyName: "株式会社山田", email: "yamada@example.com", message: "こんにちは、山田です。", survey: { internetSearch: true, employee: true, onlineNews: true, dm: true, website: true, media: true, acquaintance: true, exhibition: true, others: true }, websiteName: "http://example.com", exhibitionName: "展示会1", otherSurvey: "その他のアンケート", isRequired: true, error: "" },
+        stepData: {
+            step1: { isCompleted: false, selectedOption: "", otherDetail: "", isRequired: true, error: "" },
+            step2: { isCompleted: false, detail: "", isRequired: true, error: "" },
+            step3: { isCompleted: false, selectedOptions: { requirementsDefinition: false, design: false, development: false, testing: false, maintenance: false, otherRequirement: false }, otherRequirementDetail: "", isRequired: true, error: "" },
+            step4: { isCompleted: false, selectedOptions: { proposal: false, uiDesign: false, specification: false, server: false, domain: false, none: false, otherRequirement: false }, otherRequirementDetail: "", isRequired: true, error: "" },
+            step5: { isCompleted: false, hasPreference: "", preferenceDetail: "", isRequired: true, error: "" },
+            step6: { isCompleted: false, exampleUrl: "", isRequired: false, error: "" },
+            step7: { isCompleted: false, budget: "", isRequired: true, error: "" },
+            step8: { isCompleted: false, deadline: "", otherDeadline: "", isRequired: true, error: "" },
+            step9: { isCompleted: false, deliveryTime: "", otherDeliveryTime: "", isRequired: true, error: "" },
+            step10: { isCompleted: false, detail: "", isRequired: true, error: "" },
+            step11: { isCompleted: false, name: "", companyName: "", email: "", message: "", survey: { internetSearch: false, employee: false, onlineNews: false, dm: false, website: false, media: false, acquaintance: false, exhibition: false, others: false }, websiteName: "", exhibitionName: "", otherSurvey: "", isRequired: true, error: "" },
             step12: { isCompleted: true, isRequired: false, error: "" },
-        }
+        },
+        // stepData : {
+        //     step1: { isCompleted: true, selectedOption: "VR", otherDetail: "詳細1", isRequired: true, error: "" },
+        //     step2: { isCompleted: true, detail: "詳細2", isRequired: true, error: "" },
+        //     step3: { isCompleted: true, selectedOptions: { requirementsDefinition: true, design: true, development: true, testing: true, maintenance: true, otherRequirement: true }, otherRequirementDetail: "詳細3", isRequired: true, error: "" },
+        //     step4: { isCompleted: true, selectedOptions: { proposal: true, uiDesign: true, specification: true, server: true, domain: true, none: true, otherRequirement: true }, otherRequirementDetail: "詳細4", isRequired: true, error: "" },
+        //     step5: { isCompleted: true, hasPreference: "ある", preferenceDetail: "詳細5", isRequired: true, error: "" },
+        //     step6: { isCompleted: true, exampleUrl: "http://example.com", isRequired: false, error: "" },
+        //     step7: { isCompleted: true, budget: "50万円未満", isRequired: true, error: "" },
+        //     step8: { isCompleted: true, deadline: "3営業日以内", otherDeadline: "詳細8", isRequired: true, error: "" },
+        //     step9: { isCompleted: true, deliveryTime: "１か月以内", otherDeliveryTime: "詳細9", isRequired: true, error: "" },
+        //     step10: { isCompleted: true, detail: "詳細10", isRequired: true, error: "" },
+        //     step11: { isCompleted: true, name: "山田太郎", companyName: "株式会社山田", email: "yamada@example.com", message: "こんにちは、山田です。", survey: { internetSearch: true, employee: true, onlineNews: true, dm: true, website: true, media: true, acquaintance: true, exhibition: true, others: true }, websiteName: "http://example.com", exhibitionName: "展示会1", otherSurvey: "その他のアンケート", isRequired: true, error: "" },
+        //     step12: { isCompleted: true, isRequired: false, error: "" },
+        // }
     });
     const { currentStep, steps } = formState;
-
-    const mockSendEmail = (data) => {
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                console.log('メール送信:', data);
-                resolve();
-            }, 1000);
-        });
-    };
 
     const setStepData = (step, data) => {
         setFormState(prevState => ({
@@ -160,46 +192,20 @@ function Form() {
         setStep(formState.totalSteps);
     }
 
-    // const handleSubmit = () => {
-    //     const { stepData } = formState;
-    //     const isAllCompleted = Object.values(stepData).every(step => step.isCompleted);
-    //     if (!isAllCompleted) {
-    //         setFormState(prevState => ({
-    //             ...prevState,
-    //             stepData: Object.entries(prevState.stepData).reduce((acc, [key, value]) => {
-    //                 acc[key] = { ...value, error: value.isCompleted ? "" : "このステップはまだ完了していません" };
-    //                 return acc;
-    //             }, {})
-    //         }));
-    //         return;
-    //     }
-    //     alert('送信しました');
-    // };
-
-    const handleSubmit = () => {
-        const { stepData } = formState;
-        const isAllCompleted = Object.values(stepData).every(step => step.isCompleted);
-        if (!isAllCompleted) {
-            setFormState(prevState => ({
-                ...prevState,
-                stepData: Object.entries(prevState.stepData).reduce((acc, [key, value]) => {
-                    acc[key] = { ...value, error: value.isCompleted ? "" : "このステップはまだ完了していません" };
-                    return acc;
-                }, {})
-            }));
-            return;
+    const sendEmail = async ({ to, from, subject, text }) => {
+        const response = await fetch('https://sinfonia.tech:8080/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ to, from, subject, text })
+        });
+    
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-
-        // メール送信（モック）
-        mockSendEmail(stepData)
-            .then(() => {
-                alert('送信しました');
-                // 完了画面に遷移
-                navigate('/estimation/complete');
-            })
-            .catch(error => {
-                console.error('メール送信エラー:', error);
-            });
+    
+        return response.text();
     };
 
     const handleBack = () => {
@@ -208,15 +214,63 @@ function Form() {
         }
     };
 
+    const handleSubmit = async () => {
+        if (isSubmitting) return;
+        const { stepData } = formState;
+
+        setIsSubmitting(true);
+        
+        // シンフォニアへメール送信
+        try {
+            await sendEmail({
+                to: 'tampo@sinfonia.biz',
+                from: 'regist@sinfonia.biz',
+                subject: '新規見積もり依頼',
+                text: `
+お客様より新規見積もり依頼がありました。
+内容を確認してください。
+
+申込内容：
+${formatEmailText(stepData)}
+                `
+            });
+
+            // 顧客へメール送信
+            await sendEmail({
+                to: stepData.step11.email, // 顧客のメールアドレス
+                from: 'regist@sinfonia.biz',
+                subject: 'お見積り依頼の確認',
+                text: `
+ありがとうございます。
+お見積り依頼を受け付けました。詳細は後ほどご連絡いたします。
+
+申込内容：
+${formatEmailText(stepData)}
+                `
+            });
+
+            alert('送信しました');
+            // 完了画面に遷移
+            navigate('/estimation/complete');
+        } catch (error) {
+            alert('メール送信エラーが発生しました。');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
   return (
         <div>
             <Box backgroundColor="背景色1">
-                <Spacer size="20px"/>
+                <Spacer size="40px"/>
             </Box>
             <Box backgroundColor="背景色1">
                 <VerticalAdjuster>
                     <StepIndicator steps={formState.steps} setStep={setStep} stepData={formState.stepData} />
                 </VerticalAdjuster>
+            </Box>
+            <Box backgroundColor="背景色1">
+                <Spacer size="40px"/>
             </Box>
             <Box backgroundColor="背景色1">
                 <VerticalAdjuster>
@@ -284,7 +338,9 @@ const StyledInput = styled.input`
     padding: 10px;
     border-radius: 4px;
     border: 1px solid #ccc;
-    margin-top: 10px;
+    &:invalid {
+        border: 2px solid red;
+    }
 `;
 
 const StyledCheckbox = styled.input.attrs({ type: 'checkbox' })`
@@ -327,6 +383,9 @@ function Step1({ setStepData, stepData, handleNext }) {
                 <Spacer size="10px" />
                 <StepDescription>どのようなお仕事ですか？</StepDescription>
             </div>
+            <Box>
+                <Spacer size="12px"/>
+            </Box>
             <StyledSelect value={selectedOption} onChange={(e) => setSelectedOption(e.target.value)}>
                 <option value="">選択してください</option>
                 <option value="VR">VR</option>
@@ -337,7 +396,15 @@ function Step1({ setStepData, stepData, handleNext }) {
                 <option value="その他">その他</option>
             </StyledSelect>
             {selectedOption === "その他" && <StyledInput type="text" placeholder="詳細を入力してください" value={otherDetail} onChange={(e) => setOtherDetail(e.target.value)} />}
-            <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            </div>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
         </>
     );
 }
@@ -360,9 +427,23 @@ function Step2({ setStepData, stepData, handleBack, handleNext }) {
                 <Spacer size="10px" />
                 <StepDescription>公開プラットフォーム（端末・OS）は何ですか？</StepDescription>
             </div>
+            <Box>
+                <Spacer size="12px"/>
+            </Box>
             <StyledInput type="text" placeholder="例：Webブラウザ, META Quest, HoloLens, Windows PC, iPhone, Android など" value={detail} onChange={(e) => setDetail(e.target.value)} />
-            <FormBackButton onClick={handleBack}>戻る</FormBackButton>
-            <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <FormBackButton onClick={handleBack}>戻る</FormBackButton>
+                <Box>
+                    <Spacer size="10px"/>
+                </Box>
+                <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            </div>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
         </>
     );
 }
@@ -380,15 +461,9 @@ function Step3({ setStepData, stepData, handleBack, handleNext }) {
         });
     }, [selectedOptions, otherRequirementDetail]);
 
-    // const handleCheckboxChange = (e) => {
-    //     const { name, checked } = e.target;
-    //     setSelectedOptions(prevState => ({ ...prevState, [name]: checked }));
-    // };
-
     const handleCheckboxChange = (e) => {
         const { name, checked } = e.target;
-        const japaneseValue = checked ? getJapaneseValue(name) : ""; // getJapaneseValue は適切な日本語の値を返す関数
-        setSelectedOptions(prevState => ({ ...prevState, [name]: japaneseValue }));
+        setSelectedOptions(prevState => ({ ...prevState, [name]: checked }));
     };
 
     const handleOtherRequirementDetailChange = (e) => {
@@ -402,6 +477,9 @@ function Step3({ setStepData, stepData, handleBack, handleNext }) {
                 <Spacer size="10px" />
                 <StepDescription>依頼したい内容を教えてください</StepDescription>
             </div>
+            <Box>
+                <Spacer size="12px"/>
+            </Box>
             <label>
             <StyledCheckbox name="requirementsDefinition" checked={selectedOptions.requirementsDefinition} onChange={handleCheckboxChange} />
             要件定義
@@ -427,8 +505,19 @@ function Step3({ setStepData, stepData, handleBack, handleNext }) {
             その他
             </label>
             {selectedOptions.otherRequirement && <StyledInput type="text" placeholder="詳細を入力してください" value={otherRequirementDetail} onChange={handleOtherRequirementDetailChange} />}
-            <FormBackButton onClick={handleBack}>戻る</FormBackButton>
-            <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <FormBackButton onClick={handleBack}>戻る</FormBackButton>
+                <Box>
+                    <Spacer size="10px"/>
+                </Box>
+                <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            </div>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
         </>
     );
 }
@@ -462,6 +551,9 @@ function Step4({ setStepData, stepData, handleBack, handleNext }) {
                 <Spacer size="10px" />
                 <StepDescription>ご用意されているものはありますか？</StepDescription>
             </div>
+            <Box>
+                <Spacer size="12px"/>
+            </Box>
             <label>
             <StyledCheckbox name="proposal" checked={selectedOptions.proposal} onChange={handleCheckboxChange} />
             企画書
@@ -491,8 +583,19 @@ function Step4({ setStepData, stepData, handleBack, handleNext }) {
             その他
             </label>
             {selectedOptions.otherRequirement && <StyledInput type="text" placeholder="詳細を入力してください" value={otherRequirementDetail} onChange={handleOtherRequirementDetailChange} />}
-            <FormBackButton onClick={handleBack}>戻る</FormBackButton>
-            <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <FormBackButton onClick={handleBack}>戻る</FormBackButton>
+                <Box>
+                    <Spacer size="10px"/>
+                </Box>
+                <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            </div>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
         </>
     );
 }
@@ -517,18 +620,32 @@ function Step5({ setStepData, stepData, handleBack, handleNext }) {
                 <Spacer size="10px" />
                 <StepDescription>開発環境・言語にご希望はありますか？</StepDescription>
             </div>
+            <Box>
+                <Spacer size="12px"/>
+            </Box>
             <p>（※弊社ではVR/AR, アプリ開発についてはUnityをメインにして開発しております）</p>
             <label>
                 <StyledRadio name="preference" value="ある" checked={hasPreference === 'ある'} onChange={(e) => setHasPreference(e.target.value)} />
                 ある
             </label>
-            {hasPreference === 'ある' && <StyledInput type="text" placeholder="詳細を入力してください" value={preferenceDetail} onChange={(e) => setPreferenceDetail(e.target.value)} />}
             <label>
                 <StyledRadio name="preference" value="ない" checked={hasPreference === 'ない'} onChange={(e) => setHasPreference(e.target.value)} />
                 ない
             </label>
-            <FormBackButton onClick={handleBack}>戻る</FormBackButton>
-            <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            {hasPreference === 'ある' && <StyledInput type="text" placeholder="詳細を入力してください" value={preferenceDetail} onChange={(e) => setPreferenceDetail(e.target.value)} />}
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <FormBackButton onClick={handleBack}>戻る</FormBackButton>
+                <Box>
+                    <Spacer size="10px"/>
+                </Box>
+                <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            </div>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
         </>
     );
 }
@@ -551,9 +668,23 @@ function Step6({ setStepData, stepData, handleBack, handleNext }) {
                 <Spacer size="10px" />
                 <StepDescription>完成イメージに近い事例がありましたら教えてください。</StepDescription>
             </div>
+            <Box>
+                <Spacer size="12px"/>
+            </Box>
             <StyledInput type="url" placeholder="URLを入力してください" value={exampleUrl} onChange={(e) => setExampleUrl(e.target.value)} />
-            <FormBackButton onClick={handleBack}>戻る</FormBackButton>
-            <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <FormBackButton onClick={handleBack}>戻る</FormBackButton>
+                <Box>
+                    <Spacer size="10px"/>
+                </Box>
+                <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            </div>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
         </>
     );
 }
@@ -576,6 +707,9 @@ function Step7({ setStepData, stepData, handleBack, handleNext }) {
                 <Spacer size="10px" />
                 <StepDescription>予算上限を選択してください</StepDescription>
             </div>
+            <Box>
+                <Spacer size="12px"/>
+            </Box>
             <StyledSelect value={budget} onChange={(e) => setBudget(e.target.value)}>
                 <option value="">選択してください</option>
                 <option value="50万円未満">50万円未満</option>
@@ -584,8 +718,19 @@ function Step7({ setStepData, stepData, handleBack, handleNext }) {
                 <option value="300～500万円">300～500万円</option>
                 <option value="500万円以上">500万円以上</option>
             </StyledSelect>
-            <FormBackButton onClick={handleBack}>戻る</FormBackButton>
-            <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <FormBackButton onClick={handleBack}>戻る</FormBackButton>
+                <Box>
+                    <Spacer size="10px"/>
+                </Box>
+                <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            </div>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
         </>
     );
 }
@@ -611,6 +756,9 @@ function Step8({ setStepData, stepData, handleBack, handleNext }) {
                 <Spacer size="10px" />
                 <StepDescription>お見積りご希望期限を選択してください</StepDescription>
             </div>
+            <Box>
+                <Spacer size="12px"/>
+            </Box>
             <div style={{ marginTop: '10px', color: '#888' }}>
                 ※ご依頼内容によっては上記選択肢以上に日数が必要な場合がございます。
             </div>
@@ -625,8 +773,19 @@ function Step8({ setStepData, stepData, handleBack, handleNext }) {
             {deadline === "その他" && (
                 <StyledInput type="text" placeholder="日数を入力してください" value={otherDeadline} onChange={(e) => setOtherDeadline(e.target.value)} />
             )}
-            <FormBackButton onClick={handleBack}>戻る</FormBackButton>
-            <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <FormBackButton onClick={handleBack}>戻る</FormBackButton>
+                <Box>
+                    <Spacer size="10px"/>
+                </Box>
+                <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            </div>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
         </>
     );
 }
@@ -652,6 +811,9 @@ function Step9({ setStepData, stepData, handleBack, handleNext }) {
                 <Spacer size="10px" />
                 <StepDescription>納品ご希望時期を選択してください</StepDescription>
             </div>
+            <Box>
+                <Spacer size="12px"/>
+            </Box>
             <StyledSelect value={deliveryTime} onChange={(e) => setDeliveryTime(e.target.value)}>
                 <option value="">選択してください</option>
                 <option value="１か月以内">１か月以内</option>
@@ -663,8 +825,19 @@ function Step9({ setStepData, stepData, handleBack, handleNext }) {
             {deliveryTime === "その他" && (
                 <StyledInput type="text" placeholder="日数を入力してください" value={otherDeliveryTime} onChange={(e) => setOtherDeliveryTime(e.target.value)} />
             )}
-            <FormBackButton onClick={handleBack}>戻る</FormBackButton>
-            <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <FormBackButton onClick={handleBack}>戻る</FormBackButton>
+                <Box>
+                    <Spacer size="10px"/>
+                </Box>
+                <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            </div>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
         </>
     );
 }
@@ -687,9 +860,23 @@ function Step10({ setStepData, stepData, handleBack, handleNext }) {
                 <Spacer size="10px" />
                 <StepDescription>ご依頼の目的・内容などについてお教えください</StepDescription>
             </div>
+            <Box>
+                <Spacer size="12px"/>
+            </Box>
             <StyledTextArea placeholder="ご記入ください" value={detail} onChange={(e) => setDetail(e.target.value)} />
-            <FormBackButton onClick={handleBack}>戻る</FormBackButton>
-            <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <FormBackButton onClick={handleBack}>戻る</FormBackButton>
+                <Box>
+                    <Spacer size="10px"/>
+                </Box>
+                <FormNextButton onClick={handleNext}>次へ</FormNextButton>
+            </div>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
         </>
     );
 }
@@ -717,7 +904,9 @@ function Step11({ setStepData, stepData, handleBack, handleNext }) {
     ];
 
     useEffect(() => {
-        const isCompleted = name !== "" && email !== "" && message !== "";
+        const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i;
+        const isEmailValid = emailRegex.test(email);
+        const isCompleted = name !== "" && isEmailValid && message !== "";
         setStepData({
             name,
             companyName,
@@ -745,6 +934,9 @@ function Step11({ setStepData, stepData, handleBack, handleNext }) {
                 <StepDescription>お名前</StepDescription>
             </div>
             <StyledInput type="text" placeholder="山田太郎" value={name} onChange={(e) => setName(e.target.value)} />
+            <Box>
+                <Spacer size="24px"/>
+            </Box>
 
             <div style={{ display: 'flex', alignItems: 'center' }}>
                 <OptionalTag>任意</OptionalTag>
@@ -752,6 +944,9 @@ function Step11({ setStepData, stepData, handleBack, handleNext }) {
                 <StepDescription>ご社名</StepDescription>
             </div>
             <StyledInput type="text" placeholder="株式会社○○○○" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+            <Box>
+                <Spacer size="24px"/>
+            </Box>
 
             <div style={{ display: 'flex', alignItems: 'center' }}>
                 <RequiredTag>必須</RequiredTag>
@@ -759,6 +954,9 @@ function Step11({ setStepData, stepData, handleBack, handleNext }) {
                 <StepDescription>メールアドレス</StepDescription>
             </div>
             <StyledInput type="email" placeholder="yamada@sampledomain.biz" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Box>
+                <Spacer size="24px"/>
+            </Box>
 
             <div style={{ display: 'flex', alignItems: 'center' }}>
                 <RequiredTag>必須</RequiredTag>
@@ -766,6 +964,9 @@ function Step11({ setStepData, stepData, handleBack, handleNext }) {
                 <StepDescription>お問い合せ内容</StepDescription>
             </div>
             <StyledTextArea placeholder="お問い合せ内容を400文字以内でお願いします" value={message} onChange={(e) => setMessage(e.target.value)} />
+            <Box>
+                <Spacer size="24px"/>
+            </Box>
 
             <div style={{ display: 'flex', alignItems: 'center' }}>
                 <OptionalTag>任意</OptionalTag>
@@ -782,8 +983,19 @@ function Step11({ setStepData, stepData, handleBack, handleNext }) {
             {survey.website && <StyledInput type="text" placeholder="Webサイト名をご入力ください" value={websiteName} onChange={(e) => setWebsiteName(e.target.value)} />}
             {survey.exhibition && <StyledInput type="text" placeholder="展示会名をご入力ください" value={exhibitionName} onChange={(e) => setExhibitionName(e.target.value)} />}
             {survey.others && <StyledInput type="text" placeholder="「その他」の場合はご入力してください" value={otherSurvey} onChange={(e) => setOtherSurvey(e.target.value)} />}
-            <FormBackButton onClick={handleBack}>戻る</FormBackButton>
-            <FormNextButton onClick={handleNext}>依頼内容を確認する</FormNextButton>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <FormBackButton onClick={handleBack}>戻る</FormBackButton>
+                <Box>
+                    <Spacer size="10px"/>
+                </Box>
+                <FormNextButton onClick={handleNext}>依頼内容を確認する</FormNextButton>
+            </div>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
         </>
     );
 }
@@ -801,7 +1013,9 @@ const Card = styled.div`
     `;
 
 const FormSubmitButton = styled.button`
-    background-color: #00a0e9;
+    width: 300px;
+    height: 40px;
+    background-color: #51C707;
     color: #fff;
     font-size: 16px;
     font-weight: bold;
@@ -811,10 +1025,12 @@ const FormSubmitButton = styled.button`
     cursor: pointer;
     `;
 
-
 function Step12({ stepData, handleBack, handleSubmit }) {
     return (
         <>
+            <Box>
+                <Spacer size="10px"/>
+            </Box>
             <Title>内容確認</Title>
             <Card>
                 <Title>お仕事内容</Title>
@@ -880,13 +1096,27 @@ function Step12({ stepData, handleBack, handleSubmit }) {
             </Card>
             <Card>
                 <Title>アンケート</Title>
-                {Object.entries(stepData.step11.survey).map(([key, value]) => value && <p key={key}>{getJapaneseValue(key)}</p>)}
-                {stepData.step11.survey.website && <p>Webサイト名: {stepData.step11.websiteName}</p>}
-                {stepData.step11.survey.exhibition && <p>展示会名: {stepData.step11.exhibitionName}</p>}
-                {stepData.step11.survey.others && <p>その他: {stepData.step11.otherSurvey}</p>}
+                {Object.entries(stepData.step11.survey).map(([key, value]) => {
+                    if (value) {
+                        let detail = "";
+                        if (key === "website") detail = `: ${stepData.step11.websiteName}`;
+                        if (key === "exhibition") detail = `: ${stepData.step11.exhibitionName}`;
+                        if (key === "others") detail = `: ${stepData.step11.otherSurvey}`;
+                        return <p key={key}>{getJapaneseValue(key)}{detail}</p>
+                    }
+                    return null;
+                })}
             </Card>
-            <FormBackButton onClick={handleBack}>戻る</FormBackButton>
-            <FormSubmitButton onClick={handleSubmit}>この内容で送信する</FormSubmitButton>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <FormBackButton onClick={handleBack}>戻る</FormBackButton>
+                <Box>
+                    <Spacer size="10px"/>
+                </Box>
+                <FormSubmitButton onClick={handleSubmit}>この内容で送信する</FormSubmitButton>
+            </div>
+            <Box>
+                <Spacer size="36px"/>
+            </Box>
         </>
     );
 }

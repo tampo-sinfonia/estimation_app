@@ -8,7 +8,9 @@ const FooterContainer = styled.footer`
   background-color: #f8f9fa;
   padding: 20px;
   width: 100%;
-  position: static;
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
 `;
 
 const FooterText = styled.p`
